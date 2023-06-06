@@ -1,0 +1,22 @@
+version: '3.3'
+services:
+  validator-balance:
+    image: bosagora/validator-balance:latest
+    container_name: validator-balance
+    ports:
+      - '7000:7000'
+    restart: always
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      HOST_IP: 0.0.0.0
+      HOST_PORT: 7000
+      AGORA_SCAN_URL: http://host.docker.internal:3333
+      AGORA_CL_NODE_URL: http://host.docker.internal:3600
+      AGORA_CL_VALIDATOR_METRICS_URL: http://host.docker.internal:8151
+    networks:
+      - default_network
+
+networks:
+  default_network:
+    driver: bridge

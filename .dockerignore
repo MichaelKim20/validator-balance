@@ -1,0 +1,15 @@
+# Logs
+logs
+*.log
+
+# Dependency directory
+node_modules
+
+server/*.spec.js
+kubernetes
+
+.idea/
+env/
+tests/
+
+docker-build.sh
