@@ -30,6 +30,7 @@ export class DefaultRouter {
         this.metrics = new Metrics();
         this.metrics.createGauge("validator_balance", "current validator balance", ["pubkey"]);
         this.metrics.createGauge("validator_withdrawal", "total validator withdrawal", ["pubkey"]);
+        this.metrics.createGauge("validator_total_balance", "current validator total balance", ["pubkey"]);
     }
 
     private get app(): express.Application {
@@ -62,6 +63,11 @@ export class DefaultRouter {
                 "validator_withdrawal",
                 { pubkey: validator.publicKey },
                 validator.withdrawal / 1_000_000_000
+            );
+            this.metrics.gaugeLabels(
+                "validator_total_balance",
+                { pubkey: validator.publicKey },
+                (validator.balance + validator.withdrawal) / 1_000_000_000
             );
         }
     }
