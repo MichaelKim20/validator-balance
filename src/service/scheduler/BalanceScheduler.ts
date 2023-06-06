@@ -97,21 +97,25 @@ export class BalanceScheduler extends Scheduler {
 
             this.validatorKeys = await this.getValidators();
 
+            let success = 0;
+            let fail = 0;
             for (const key of this.validatorKeys) {
                 try {
                     const res = await this.getValidatorInfo(latestSlot, key);
                     validators.push(res);
+                    success++;
                 } catch (error) {
-                    logger.error(`Failed to getting validator info ${key}: ${error}`);
+                    fail++;
                 }
             }
+
+            if (fail > 0) logger.error(`Success: ${success}, Fail: ${fail}`);
 
             try {
                 const withdrawals = await this.getWithdrawals(latestSlot, validators.map((m) => m.index).join(","));
                 for (const withdrawal of withdrawals) {
                     const validator = validators.find((m) => m.index === withdrawal.index);
-                    if (validator !== undefined)
-                        validator.withdrawal = withdrawal.withdrawal;
+                    if (validator !== undefined) validator.withdrawal = withdrawal.withdrawal;
                 }
             } catch (error) {
                 logger.error(`Failed to getting validator withdrawal : ${error}`);
