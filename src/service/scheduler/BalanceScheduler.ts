@@ -111,14 +111,16 @@ export class BalanceScheduler extends Scheduler {
 
             if (fail > 0) logger.error(`Success: ${success}, Fail: ${fail}`);
 
-            try {
-                const withdrawals = await this.getWithdrawals(latestSlot, validators.map((m) => m.index).join(","));
-                for (const withdrawal of withdrawals) {
-                    const validator = validators.find((m) => m.index === withdrawal.index);
-                    if (validator !== undefined) validator.withdrawal = withdrawal.withdrawal;
+            if (validators.length > 0) {
+                try {
+                    const withdrawals = await this.getWithdrawals(latestSlot, validators.map((m) => m.index).join(","));
+                    for (const withdrawal of withdrawals) {
+                        const validator = validators.find((m) => m.index === withdrawal.index);
+                        if (validator !== undefined) validator.withdrawal = withdrawal.withdrawal;
+                    }
+                } catch (error) {
+                    logger.error(`Failed to getting validator withdrawal : ${error}`);
                 }
-            } catch (error) {
-                logger.error(`Failed to getting validator withdrawal : ${error}`);
             }
 
             this.validators = validators.sort((a, b) => {
