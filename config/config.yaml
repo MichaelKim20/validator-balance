@@ -1,0 +1,35 @@
+################################################################################
+##                             Network interface                              ##
+################################################################################
+server:
+  address: ${HOST_IP}
+  port: ${HOST_PORT}
+
+################################################################################
+##                               Logging options                              ##
+################################################################################
+logging:
+  # The name of the folder where the logs are stored.
+  folder: logs
+  # Values: error, warn, info, http, verbose, debug, silly
+  level: info
+  # Default to false
+  console: true
+
+################################################################################
+##                             Scheduler options                              ##
+################################################################################
+scheduler:
+  enable: true
+  items:
+    - name: balance
+      enable: true
+      expression: "*/20 * * * * *"
+
+################################################################################
+##                               Setting options                              ##
+################################################################################
+setting:
+  agora_scan_url: ${AGORA_SCAN_URL}
+  agora_cl_node_url: ${AGORA_CL_NODE_URL}
+  agora_cl_validator_metrics_url: ${AGORA_CL_VALIDATOR_METRICS_URL}
