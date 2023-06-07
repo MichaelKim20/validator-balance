@@ -2,7 +2,7 @@ import express from "express";
 import { WebService } from "../../modules/service/WebService";
 import { Config } from "../common/Config";
 import { Metrics } from "../metrics/Metrics";
-import { IValidatorInfo } from "../types";
+import { IValidatorInfo, IValidatorStatus } from "../types";
 
 export class DefaultRouter {
     /**
@@ -28,6 +28,11 @@ export class DefaultRouter {
         this._web_service = service;
         this._config = config;
         this.metrics = new Metrics();
+        this.metrics.createGauge(
+            "validator_statuses",
+            "validator statuses: 0 UNKNOWN, 1 DEPOSITED, 2 PENDING, 3 ACTIVE, 4 EXITING, 5 SLASHING, 6 EXITED",
+            ["pubkey"]
+        );
         this.metrics.createGauge("validator_balance", "current validator balance", ["pubkey"]);
         this.metrics.createGauge("validator_withdrawal", "total validator withdrawal", ["pubkey"]);
         this.metrics.createGauge("validator_total_balance", "current validator total balance", ["pubkey"]);
@@ -52,7 +57,11 @@ export class DefaultRouter {
         };
     }
 
-    public storeMetrics(validators: IValidatorInfo[]) {
+    public storeMetrics(statuses: IValidatorStatus[], validators: IValidatorInfo[]) {
+        for (const status of statuses) {
+            this.metrics.gaugeLabels("validator_statuses", { pubkey: status.publicKey }, status.status);
+        }
+
         for (const validator of validators) {
             this.metrics.gaugeLabels(
                 "validator_balance",

@@ -5,6 +5,11 @@ export interface IValidatorInfo {
     withdrawal: number;
 }
 
+export interface IValidatorStatus {
+    publicKey: string;
+    status: number;
+}
+
 export interface IValidatorWithdrawal {
     index: number;
     withdrawal: number;

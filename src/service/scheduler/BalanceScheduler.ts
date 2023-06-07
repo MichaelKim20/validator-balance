@@ -1,7 +1,7 @@
 import { Scheduler } from "../../modules";
 import { Config } from "../common/Config";
 import { logger } from "../common/Logger";
-import { IValidatorInfo, IValidatorWithdrawal } from "../types";
+import { IValidatorInfo, IValidatorStatus, IValidatorWithdrawal } from "../types";
 import { Utils } from "../utils/Utils";
 
 // @ts-ignore
@@ -18,7 +18,7 @@ interface IMetricsItem {
     metrics: IMetricsData[];
 }
 interface IMetricsData {
-    value: string;
+    value: number;
     labels: {
         pubkey: string;
     };
@@ -35,15 +35,12 @@ export class BalanceScheduler extends Scheduler {
 
     private _router: DefaultRouter | undefined;
 
-    /**
-     *
-     */
+    private validatorStatuses: IValidatorStatus[];
     private validators: IValidatorInfo[];
-    private validatorKeys: string[];
 
     constructor(expression: string) {
         super(expression);
-        this.validatorKeys = (process.env.VALIDATORS || "").split(",");
+        this.validatorStatuses = [];
         this.validators = [];
     }
 
@@ -95,13 +92,13 @@ export class BalanceScheduler extends Scheduler {
             if (latestSlot <= 0) return;
             const validators: IValidatorInfo[] = [];
 
-            this.validatorKeys = await this.getValidators();
+            this.validatorStatuses = await this.getValidatorStatuses();
 
             let success = 0;
             let fail = 0;
-            for (const key of this.validatorKeys) {
+            for (const status of this.validatorStatuses) {
                 try {
-                    const res = await this.getValidatorInfo(latestSlot, key);
+                    const res = await this.getValidatorInfo(latestSlot, status.publicKey);
                     validators.push(res);
                     success++;
                 } catch (error) {
@@ -127,7 +124,7 @@ export class BalanceScheduler extends Scheduler {
                 return a.index - b.index;
             });
 
-            this.router.storeMetrics(this.validators);
+            this.router.storeMetrics(this.validatorStatuses, this.validators);
         } catch (error) {
             logger.error(`Failed to execute the BalanceScheduler: ${error}`);
         }
@@ -153,8 +150,8 @@ export class BalanceScheduler extends Scheduler {
         });
     }
 
-    private async getValidators(): Promise<string[]> {
-        return new Promise<string[]>((resolve, reject) => {
+    private async getValidatorStatuses(): Promise<IValidatorStatus[]> {
+        return new Promise<IValidatorStatus[]>((resolve, reject) => {
             const client = axios.create();
             const url = `${this.config.setting.agora_cl_validator_metrics_url}/metrics`;
             client
@@ -176,8 +173,16 @@ export class BalanceScheduler extends Scheduler {
                         }
                     }
                     const data: IMetricsItem[] = parsePrometheusTextFormat(balanceLines.join("\n") + "\n");
-                    if (data.length > 0) resolve(data[0].metrics.map((m) => m.labels.pubkey));
-                    else {
+                    if (data.length > 0) {
+                        resolve(
+                            data[0].metrics.map((m) => {
+                                return {
+                                    publicKey: m.labels.pubkey,
+                                    status: Number(m.value),
+                                };
+                            })
+                        );
+                    } else {
                         reject(new Error("Not found value."));
                     }
                 })
