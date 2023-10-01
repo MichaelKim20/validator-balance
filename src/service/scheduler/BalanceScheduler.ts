@@ -94,6 +94,7 @@ export class BalanceScheduler extends Scheduler {
 
             this.validatorStatuses = await this.getValidatorStatuses();
 
+            // logger.info(`latestSlot: ${latestSlot}`);
             let success = 0;
             let fail = 0;
             for (const status of this.validatorStatuses) {
@@ -109,14 +110,22 @@ export class BalanceScheduler extends Scheduler {
             if (fail > 0) logger.error(`Success: ${success}, Fail: ${fail}`);
 
             if (validators.length > 0) {
-                try {
-                    const withdrawals = await this.getWithdrawals(latestSlot, validators.map((m) => m.index).join(","));
-                    for (const withdrawal of withdrawals) {
-                        const validator = validators.find((m) => m.index === withdrawal.index);
-                        if (validator !== undefined) validator.withdrawal = withdrawal.withdrawal;
+                for (let i = 0; i < validators.length; i += 5) {
+                    try {
+                        const idexes = [];
+                        for (let j = i; j < i + 5 && j < validators.length; j++) {
+                            idexes.push(validators[j].index);
+                        }
+                        const withdrawals = await this.getWithdrawals(latestSlot, idexes.join(","));
+                        for (const withdrawal of withdrawals) {
+                            // logger.info(`Withdrawal ${withdrawal.index} : ${withdrawal.withdrawal}`);
+                            const validator = validators.find((m) => m.index === withdrawal.index);
+                            if (validator !== undefined) validator.withdrawal = withdrawal.withdrawal;
+                        }
+                        await Utils.delay(3000);
+                    } catch (error) {
+                        logger.error(`Failed to getting validator withdrawal : ${error}`);
                     }
-                } catch (error) {
-                    logger.error(`Failed to getting validator withdrawal : ${error}`);
                 }
             }
 
@@ -220,7 +229,7 @@ export class BalanceScheduler extends Scheduler {
     private async getWithdrawals(slot: number, indexes: string): Promise<IValidatorWithdrawal[]> {
         return new Promise<IValidatorWithdrawal[]>((resolve, reject) => {
             const client = axios.create();
-            const url = `${this.config.setting.agora_scan_url}/api/v1/validator/${indexes}/totalwithdrawals?slot=${slot}`;
+            const url = `${this.config.setting.agora_scan_url}/api/v1/validator/${indexes}/total_withdrawals?slot=${slot}`;
 
             client
                 .get(url)
